@@ -1,0 +1,4 @@
+
+
+play:
+	python -m compose

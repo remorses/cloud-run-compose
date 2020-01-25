@@ -8,7 +8,7 @@
             "name": "Python: Modulo",
             "type": "python",
             "request": "launch",
-            "module": "module"
+            "module": "compose"
         },
         {
             "name": "Python: Play",

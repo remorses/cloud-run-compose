@@ -71,7 +71,10 @@ resource "google_cloud_run_service" "default" {
         args = var.args
         env = [
             ${{
-                indent_to('            ', '\n'.join(['{\nname = "' + name + '"\nvalue = "' + value + '"\n},' for name, value in environment.items()]))
+                indent_to(
+                    '            ', 
+                    '\n'.join(['{\nname = "' + name + '"\nvalue = "' + value + '"\n},' for name, value in environment.items()])
+                )
             }}
         ]
       }

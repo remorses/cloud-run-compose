@@ -10,13 +10,13 @@ here = os.path.dirname(__file__)
 
 def render_terraform_plan(config):
     plan = load(os.path.join(here, "main.tf"))
-    populated_plan = populate_string(plan, {"x": "XXX"})
+    populated_plan = populate_string(plan, {"environment": {"XXX": 'ciao'}})
     # print(populated_plan)
     random_dir = str(random.random())[3:]
     with temporary_write(
         populated_plan, delete_dir=True, path=os.path.join(here, random_dir, "main.tf")
     ) as plan_path:
-        out = subprocess_call("ls " + plan_path)
+        out = subprocess_call("cat " + plan_path)
         print(out)
         # pass
 

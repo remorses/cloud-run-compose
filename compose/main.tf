@@ -7,7 +7,6 @@ variable "credentialsJson" {
   type    = string
   default = "credentials.json"
 }
-}
 variable "serviceName" {
   type    = string
   default = "test_terraform"
@@ -68,6 +67,13 @@ resource "google_cloud_run_service" "default" {
     spec {
       containers {
         image = var.image
+        command = var.command
+        args = var.args
+        env = [
+            ${{
+                indent_to('            ', '\n'.join(['{\nname = "' + name + '"\nvalue = "' + value + '"\n},' for name, value in environment.items()]))
+            }}
+        ]
       }
     }
   }
@@ -113,5 +119,3 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
 output "service_url" {
   value = "${google_cloud_run_service.default.status[0].url}"
 }
-
-${{ x }}

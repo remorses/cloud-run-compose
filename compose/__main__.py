@@ -10,15 +10,15 @@ here = os.path.dirname(__file__)
 CREDENTIALS = """
 
 provider "google-beta" {
-  credentials = file("${{ credentialsJson }}")
+  credentials = file("${{ credentials }}")
   project     = "${{projectId}}"
-  region      = "us-central1"
+  region      = "${{region}}
 }
 
 provider "google" {
-  credentials = file("${{ credentialsJson }}")
-  project     = var.projectId
-  region      = "us-central1"
+  credentials = file("${{ credentials }}")
+  project     = "${{projectId}}"
+  region      = "${{region}}
 }
 """
 
@@ -70,8 +70,16 @@ def get_environment(config):
     return {}
 
 
-def main(projectId="pp1", file="docker-compose.yml", region="us-central1"):
+def main(
+    projectId="pp1",
+    file="docker-compose.yml",
+    region="us-central1",
+    credentials="credential.json",
+):
     config = yaml.safe_load(open(file))
+    plan = populate_string(
+        CREDENTIALS, dict(region=region, projectId=projectId, credentials=credentials)
+    )
     for serviceName, service in config.get("services", {}).items():
         vars = dict(
             environment=get_environment(service),
@@ -83,7 +91,8 @@ def main(projectId="pp1", file="docker-compose.yml", region="us-central1"):
             projectId=projectId,
         )
         populated_service = populate_string(SERVICE_PLAN, vars)
-        print(populated_service)
+        plan += "\n" + populated_service
+    print(plan)
     # random_dir = str(random.random())[3:]
     # with temporary_write(
     #     populated_plan, delete_dir=True, path=os.path.join(here, random_dir, "main.tf")

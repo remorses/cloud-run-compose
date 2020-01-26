@@ -67,7 +67,7 @@ resource "google_cloud_run_service" "${{ serviceName }}" {
 }
 
 
-output "${{serviceName}}service_url" {
+output "${{serviceName}}_service_url" {
   value = "${google_cloud_run_service.${{serviceName}}.status[0].url}"
 }
 """

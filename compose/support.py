@@ -21,7 +21,7 @@ class ProcessException(Exception):
         self.message = err + out
 
 
-def subprocess_call(cmd, verbose=True, errorprint=True):
+def subprocess_call(cmd, ):
     """ Executes the given subprocess command."""
 
     popen_params = {
@@ -44,6 +44,23 @@ def subprocess_call(cmd, verbose=True, errorprint=True):
         if err:
             print(err.decode(), end="")
     return process.poll()
+
+def get_stdout(cmd, ):
+    """ Executes the given subprocess command."""
+
+    popen_params = {
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "stdin": subprocess.DEVNULL,
+        "shell": True,
+    }
+    # pretty_cmd = ' '.join(cmd)
+    # print(f'executing {pretty_cmd}')
+    process = subprocess.Popen(cmd, **popen_params)
+    out, err = process.communicate()
+    if process.returncode:
+        raise ProcessException(out.decode(), err.decode())
+    return out.decode()
 
 
 class temporary_write:

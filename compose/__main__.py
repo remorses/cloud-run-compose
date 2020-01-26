@@ -2,7 +2,14 @@ import fire
 import random
 from populate import populate_string
 import os.path
-from .support import load, temporary_write, subprocess_call, ProcessException, dump_env_file
+from .support import (
+    load,
+    temporary_write,
+    subprocess_call,
+    ProcessException,
+    dump_env_file,
+    get_stdout,
+)
 import yaml
 
 
@@ -46,13 +53,12 @@ resource "google_cloud_run_service" "${{ serviceName }}" {
     spec {
       containers {
         image = "${{ image }}"
-        command = "${{ command }}"
-        args = "${{ args }}"
-        env = [
-            ${{
-                indent_to('            ', '\n'.join(['{\n    name = "' + name + '"\n    value = "' + value + '"\n},' for name, value in environment.items()]))
-            }}
-        ]
+        ${{ f'command = {json.dumps(command)}' if command else '' }}
+        ${{ f'args = {json.dumps(args)}' if args else '' }}
+
+        ${{
+            indent_to('        ', '\n'.join(['env {\n    name = "' + name + '"\n    value = "' + value + '"\n}\n' for name, value in environment.items()]))
+        }}
       }
     }
   }
@@ -96,43 +102,54 @@ def get_environment(config):
     return result
 
 
+def parse_command(command):
+    if isinstance(command, list):
+        return command
+    if isinstance(command, str):
+        return ["sh", "-c", command]
+    raise Exception(f"cannot transform command `{command}` to list")
+
+
 def main(
-    projectId="pp1",
     file="docker-compose.yml",
+    project="pp1",
     region="us-central1",
     credentials="credentials.json",
 ):
-    config = yaml.safe_load(open(file))
+    try:
+        data = get_stdout(f"docker-compose -f {file} config")
+    except ProcessException as e:
+        print(e.message)
+        return
+    config = yaml.safe_load(data)
     plan = populate_string(
-        CREDENTIALS, dict(region=region, projectId=projectId, credentials=credentials)
+        CREDENTIALS, dict(region=region, projectId=project, credentials=credentials)
     )
     for serviceName, service in config.get("services", {}).items():
         vars = dict(
             environment=get_environment(service),
             serviceName=serviceName,
             image=service.get("image", ""),
-            command=service.get("entrypoint", ""),
-            args=service.get("command", ""),
+            command=parse_command(service.get("entrypoint", [])),
+            args=parse_command(service.get("command", [])),
             region=region,
-            projectId=projectId,
+            projectId=project,
         )
         populated_service = populate_string(SERVICE_PLAN, vars)
         plan += "\n" + populated_service
         plan += populate_string(PUBLIC_SERVICE, dict(serviceName=serviceName))
     # print(plan)
     # random_dir = str(random.random())[3:]
-    with open('main.tf', 'w') as f:
+    with open("main.tf", "w") as f:
         f.write(plan)
     try:
         out = subprocess_call("terraform init")
         assert not out
-        print(out)
         out = subprocess_call("terraform refresh")
         assert not out
-        print('run terraform apply to execute the plan')
+        print("run terraform apply to execute the plan")
     except Exception as e:
         print(e)
-        
 
 
 fire.Fire(main)

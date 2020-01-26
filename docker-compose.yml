@@ -1,51 +1,21 @@
 version: '3'
 
 services:
-    # gateway:
-    #     image: xmorse/apollo-federation-gateway
-    #     labels:
-    #         - traefik.enable=true
-    #         - 'traefik.frontend.rule=Host:graphql.instabotnet.club'
-    #     ports:
-    #         - 8080:80
-    #     environment:
-    #         URL_0: 'http://mongoke/'
-    #         # URL_1: 'http://server'
-    mongoke:
+    gateway:
+        image: gcr.io/cloudrun/hello
+        command: bash
+        # labels:
+        #     - traefik.enable=true
+        #     - 'traefik.frontend.rule=Host:graphql.instabotnet.club'
         ports:
-            - 8090:80
-        image: mongoke/mongoke:latest
+            - 8080:80
         environment:
-            - DEBUG=1
-            - DB_URL=mongodb://mongo/db
-        volumes:
-            - ./mongoke.yml:/conf.yml
-    # populate-db:
-    #     image: mongoke/populate-mongo
-    #     volumes:
-    #         - ./mongoke.yml/:/conf.yml
-    #     environment:
-    #         - DB_URL=mongodb://mongo/db
-    mongo:
-        image: mongo
-        ports:
-            - 27017:27017
-        logging:
-            driver: none
-        # volumes: 
-        #     - mongo:/etc/data
-    upload:
-        image: xmorse/s3-filepond
-        ports:
-            - 8010:80
-        environment:
-            - ENDPOINT=https://storage.googleapis.com
-            - AWS_ACCESS_KEY_ID=$ACCESS_KEY_ID
-            - AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY
-            - DIRECTORY=efi-archives/
-            - BUCKET=efi-archives
-            - REGION=eu-west-1
-    # populate_specs:
-    #     build: populate_specs
-    #     environment:
-    #         - DB_URL=mongodb://mongo/db
+            URL_0: 'http://mongoke/'
+            URL_1: 'http://server'
+    test:
+        image: busybox
+        command: 
+            - sh
+            - '-c'
+            - 'echo ciao'
+    

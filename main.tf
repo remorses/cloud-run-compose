@@ -1,14 +1,14 @@
 
 
 provider "google-beta" {
-  credentials = file("credentials.json")
-  project     = "pp1"
+  credentials = file("account.json")
+  project     = "molten-enigma-261612"
   region      = "us-central1"
 }
 
 provider "google" {
-  credentials = file("credentials.json")
-  project     = "pp1"
+  credentials = file("account.json")
+  project     = "molten-enigma-261612"
   region      = "us-central1"
 }
 
@@ -22,139 +22,78 @@ data "google_iam_policy" "noauth" {
 }
 
 
-resource "google_cloud_run_service" "mongoke" {
+resource "google_cloud_run_service" "gateway" {
   provider = google-beta
-  name     = "mongoke"
+  name     = "gateway"
   location = "us-central1"
   metadata {
-    namespace = "pp1"
+    namespace = "molten-enigma-261612"
   }
 
   template {
     spec {
       containers {
-        image = "mongoke/mongoke:latest"
-        command = ""
-        args = ""
-        env = [
-            {
-                name = "DEBUG"
-                value = "1"
-            },
-            {
-                name = "DB_URL"
-                value = "mongodb://mongo/db"
-            },
-        ]
+        image = "gcr.io/cloudrun/hello"
+        
+        args = ["sh", "-c", "bash"]
+
+        env {
+            name = "URL_0"
+            value = "http://mongoke/"
+        }
+        env {
+            name = "URL_1"
+            value = "http://server"
+        }
       }
     }
   }
 }
 
 
-output "mongokeservice_url" {
-  value = "${google_cloud_run_service.mongoke.status[0].url}"
+output "gatewayservice_url" {
+  value = "${google_cloud_run_service.gateway.status[0].url}"
 }
 
-resource "google_cloud_run_service_iam_policy" "mongoke_noauth" {
-  location    = google_cloud_run_service.mongoke.location
-  project     = google_cloud_run_service.mongoke.project
-  service     = google_cloud_run_service.mongoke.name
+resource "google_cloud_run_service_iam_policy" "gateway_noauth" {
+  location    = google_cloud_run_service.gateway.location
+  project     = google_cloud_run_service.gateway.project
+  service     = google_cloud_run_service.gateway.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }
 
 
-resource "google_cloud_run_service" "mongo" {
+resource "google_cloud_run_service" "test" {
   provider = google-beta
-  name     = "mongo"
+  name     = "test"
   location = "us-central1"
   metadata {
-    namespace = "pp1"
+    namespace = "molten-enigma-261612"
   }
 
   template {
     spec {
       containers {
-        image = "mongo"
-        command = ""
-        args = ""
-        env = [
-            
-        ]
+        image = "busybox"
+        
+        args = ["sh", "-c", "echo ciao"]
+
+        
       }
     }
   }
 }
 
 
-output "mongoservice_url" {
-  value = "${google_cloud_run_service.mongo.status[0].url}"
+output "testservice_url" {
+  value = "${google_cloud_run_service.test.status[0].url}"
 }
 
-resource "google_cloud_run_service_iam_policy" "mongo_noauth" {
-  location    = google_cloud_run_service.mongo.location
-  project     = google_cloud_run_service.mongo.project
-  service     = google_cloud_run_service.mongo.name
-
-  policy_data = data.google_iam_policy.noauth.policy_data
-}
-
-
-resource "google_cloud_run_service" "upload" {
-  provider = google-beta
-  name     = "upload"
-  location = "us-central1"
-  metadata {
-    namespace = "pp1"
-  }
-
-  template {
-    spec {
-      containers {
-        image = "xmorse/s3-filepond"
-        command = ""
-        args = ""
-        env = [
-            {
-                name = "ENDPOINT"
-                value = "https://storage.googleapis.com"
-            },
-            {
-                name = "AWS_ACCESS_KEY_ID"
-                value = "$ACCESS_KEY_ID"
-            },
-            {
-                name = "AWS_SECRET_ACCESS_KEY"
-                value = "$SECRET_ACCESS_KEY"
-            },
-            {
-                name = "DIRECTORY"
-                value = "efi-archives/"
-            },
-            {
-                name = "BUCKET"
-                value = "efi-archives"
-            },
-            {
-                name = "REGION"
-                value = "eu-west-1"
-            },
-        ]
-      }
-    }
-  }
-}
-
-
-output "uploadservice_url" {
-  value = "${google_cloud_run_service.upload.status[0].url}"
-}
-
-resource "google_cloud_run_service_iam_policy" "upload_noauth" {
-  location    = google_cloud_run_service.upload.location
-  project     = google_cloud_run_service.upload.project
-  service     = google_cloud_run_service.upload.name
+resource "google_cloud_run_service_iam_policy" "test_noauth" {
+  location    = google_cloud_run_service.test.location
+  project     = google_cloud_run_service.test.project
+  service     = google_cloud_run_service.test.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }

@@ -165,7 +165,7 @@ def main(
         assert not out
         out, _, _ = subprocess_call("terraform refresh")
         assert not out
-        printblue("run terraform apply to execute the plan")
+        printblue("run `terraform apply` to execute the plan")
     except Exception as e:
         print(e)
 

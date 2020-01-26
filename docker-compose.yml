@@ -1,27 +1,27 @@
 version: '3'
 
 services:
-    gateway:
+    example-cloudrun-compose:
         image: gcr.io/cloudrun/hello
-        command: bash
+        # command: bash
         # labels:
         #     - traefik.enable=true
         #     - 'traefik.frontend.rule=Host:graphql.instabotnet.club'
         expose: 
             - 8080
         ports:
-            - 8080:80
+            - 8080:8080
         environment:
             URL_0: 'http://mongoke/'
             URL_1: 'http://server'
-    test:
-        image: busybox
-        command: 
-            - sh
-            - '-c'
-            - 'echo ciao'
-    build:
-        build: .
-        image: loudrun-compose_build:ciao
+    # test:
+    #     image: busybox
+    #     command: 
+    #         - sh
+    #         - '-c'
+    #         - 'echo ciao'
+    # build:
+    #     build: .
+    #     image: loudrun-compose_build:ciao
 
     

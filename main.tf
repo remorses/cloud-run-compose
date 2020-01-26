@@ -22,44 +22,9 @@ data "google_iam_policy" "noauth" {
 }
 
 
-resource "google_cloud_run_service" "build" {
+resource "google_cloud_run_service" "example-cloudrun-compose" {
   provider = google-beta
-  name     = "build"
-  location = "us-central1"
-  metadata {
-    namespace = "molten-enigma-261612"
-  }
-
-  template {
-    spec {
-      containers {
-        image = "loudrun-compose_build:ciao"
-        
-        
-
-        
-      }
-    }
-  }
-}
-
-
-output "buildservice_url" {
-  value = "${google_cloud_run_service.build.status[0].url}"
-}
-
-resource "google_cloud_run_service_iam_policy" "build_noauth" {
-  location    = google_cloud_run_service.build.location
-  project     = google_cloud_run_service.build.project
-  service     = google_cloud_run_service.build.name
-
-  policy_data = data.google_iam_policy.noauth.policy_data
-}
-
-
-resource "google_cloud_run_service" "gateway" {
-  provider = google-beta
-  name     = "gateway"
+  name     = "example-cloudrun-compose"
   location = "us-central1"
   metadata {
     namespace = "molten-enigma-261612"
@@ -70,7 +35,7 @@ resource "google_cloud_run_service" "gateway" {
       containers {
         image = "gcr.io/cloudrun/hello"
         
-        args = ["sh", "-c", "bash"]
+        
 
         env {
             name = "URL_0"
@@ -86,49 +51,14 @@ resource "google_cloud_run_service" "gateway" {
 }
 
 
-output "gatewayservice_url" {
-  value = "${google_cloud_run_service.gateway.status[0].url}"
+output "example-cloudrun-composeservice_url" {
+  value = "${google_cloud_run_service.example-cloudrun-compose.status[0].url}"
 }
 
-resource "google_cloud_run_service_iam_policy" "gateway_noauth" {
-  location    = google_cloud_run_service.gateway.location
-  project     = google_cloud_run_service.gateway.project
-  service     = google_cloud_run_service.gateway.name
-
-  policy_data = data.google_iam_policy.noauth.policy_data
-}
-
-
-resource "google_cloud_run_service" "test" {
-  provider = google-beta
-  name     = "test"
-  location = "us-central1"
-  metadata {
-    namespace = "molten-enigma-261612"
-  }
-
-  template {
-    spec {
-      containers {
-        image = "busybox"
-        
-        args = ["sh", "-c", "echo ciao"]
-
-        
-      }
-    }
-  }
-}
-
-
-output "testservice_url" {
-  value = "${google_cloud_run_service.test.status[0].url}"
-}
-
-resource "google_cloud_run_service_iam_policy" "test_noauth" {
-  location    = google_cloud_run_service.test.location
-  project     = google_cloud_run_service.test.project
-  service     = google_cloud_run_service.test.name
+resource "google_cloud_run_service_iam_policy" "example-cloudrun-compose_noauth" {
+  location    = google_cloud_run_service.example-cloudrun-compose.location
+  project     = google_cloud_run_service.example-cloudrun-compose.project
+  service     = google_cloud_run_service.example-cloudrun-compose.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }

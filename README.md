@@ -43,23 +43,9 @@ The command will generate a `main.tf` file in the working directory, to deploy t
 
 `terraform apply`
 
-The services will be deployed as cloud run services in google cloud
+The services will be deployed in google cloud run and will be available at url like
 
-```
-google_cloud_run_service.example-cloudrun-compose: Creating...
-google_cloud_run_service.example-cloudrun-compose: Still creating... [10s elapsed]
-google_cloud_run_service.example-cloudrun-compose: Still creating... [20s elapsed]
-google_cloud_run_service.example-cloudrun-compose: Still creating... [30s elapsed]
-google_cloud_run_service.example-cloudrun-compose: Creation complete after 31s [id=locations/us-central1/namespaces/molten-enigma-261612/services/example-cloudrun-compose]
-google_cloud_run_service_iam_policy.example-cloudrun-compose_noauth: Creating...
-google_cloud_run_service_iam_policy.example-cloudrun-compose_noauth: Creation complete after 2s [id=v1/projects/molten-enigma-261612/locations/us-central1/services/example-cloudrun-compose]
-
-Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
-
-Outputs:
-
-example-cloudrun-composeservice_url = https://example-cloudrun-compose-zakzcx4zxq-uc.a.run.app
-```
+`https://{service-name}-zakzcx4zxq-uc.a.run.app`
 
 ## Build and push
 

@@ -20,6 +20,15 @@ provider "google" {
   project     = "${{projectId}}"
   region      = "${{region}}
 }
+
+data "google_iam_policy" "noauth" {
+  binding {
+    role = "roles/run.invoker"
+    members = [
+      "allUsers",
+    ]
+  }
+}
 """
 
 
@@ -48,11 +57,21 @@ resource "google_cloud_run_service" "${{ serviceName }}" {
   }
 }
 
+
 output "${{serviceName}}service_url" {
   value = "${google_cloud_run_service.${{serviceName}}.status[0].url}"
 }
 """
 
+PUBLIC_SERVICE = """
+resource "google_cloud_run_service_iam_policy" "${{serviceName}}_noauth" {
+  location    = google_cloud_run_service.${{serviceName}}.location
+  project     = google_cloud_run_service.${{serviceName}}.project
+  service     = google_cloud_run_service.${{serviceName}}.name
+
+  policy_data = data.google_iam_policy.noauth.policy_data
+}
+"""
 
 # plan = load(os.path.join(here, "main.tf"))
 
@@ -92,6 +111,7 @@ def main(
         )
         populated_service = populate_string(SERVICE_PLAN, vars)
         plan += "\n" + populated_service
+        plan += populate_string(PUBLIC_SERVICE, dict(serviceName=serviceName))
     print(plan)
     # random_dir = str(random.random())[3:]
     # with temporary_write(

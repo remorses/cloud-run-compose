@@ -22,6 +22,41 @@ data "google_iam_policy" "noauth" {
 }
 
 
+resource "google_cloud_run_service" "build" {
+  provider = google-beta
+  name     = "build"
+  location = "us-central1"
+  metadata {
+    namespace = "molten-enigma-261612"
+  }
+
+  template {
+    spec {
+      containers {
+        image = "loudrun-compose_build:ciao"
+        
+        
+
+        
+      }
+    }
+  }
+}
+
+
+output "buildservice_url" {
+  value = "${google_cloud_run_service.build.status[0].url}"
+}
+
+resource "google_cloud_run_service_iam_policy" "build_noauth" {
+  location    = google_cloud_run_service.build.location
+  project     = google_cloud_run_service.build.project
+  service     = google_cloud_run_service.build.name
+
+  policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+
 resource "google_cloud_run_service" "gateway" {
   provider = google-beta
   name     = "gateway"

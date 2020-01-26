@@ -3,7 +3,17 @@ import os
 import subprocess
 import random
 from dotenv import dotenv_values
+from colorama import Fore, Back, Style, init
 
+init()
+
+def printred(msg):
+    print(Fore.RED + msg)
+    print(Style.RESET_ALL)
+
+def printblue(msg):
+    print(Fore.YELLOW + msg)
+    print(Style.RESET_ALL)
 
 def dump_env_file(path):
     return dotenv_values(path)
@@ -34,6 +44,8 @@ def subprocess_call(cmd, ):
     # print(f'executing {pretty_cmd}')
     process = subprocess.Popen(cmd, **popen_params)
 
+    result1 = ''
+    result2 = ''
     while True:
         output = process.stdout.readline()
         err = process.stderr.readline()
@@ -41,9 +53,11 @@ def subprocess_call(cmd, ):
             break
         if output:
             print(output.decode(), end="")
+            result1 += output.decode()
         if err:
             print(err.decode(), end="")
-    return process.poll()
+            result2 += err.decode()
+    return process.poll(), result1, result2
 
 def get_stdout(cmd, ):
     """ Executes the given subprocess command."""

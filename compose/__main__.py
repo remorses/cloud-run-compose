@@ -9,6 +9,8 @@ from .support import (
     ProcessException,
     dump_env_file,
     get_stdout,
+    printred,
+    printblue
 )
 import yaml
 
@@ -115,17 +117,33 @@ def main(
     project="pp1",
     region="us-central1",
     credentials="credentials.json",
+    output_plan="main.tf",
+    build=False
 ):
     try:
         data = get_stdout(f"docker-compose -f {file} config")
     except ProcessException as e:
-        print(e.message)
+        printred(e.message)
         return
     config = yaml.safe_load(data)
     plan = populate_string(
         CREDENTIALS, dict(region=region, projectId=project, credentials=credentials)
     )
     for serviceName, service in config.get("services", {}).items():
+        if not service.get('image'):
+            printred('all services need an image to be deployed to Cloud Run')
+            return
+        if build and service.get('build'):
+            code, _, _ = subprocess_call(f'docker-compose -f {file} build {serviceName}')
+            if code:
+                printred('failed building')
+                return
+            print('pushing to registry')
+            code, _, _ = subprocess_call(f'docker-compose -f {file} push {serviceName}')
+            if code:
+                printred('cannot push image')
+                return
+
         vars = dict(
             environment=get_environment(service),
             serviceName=serviceName,
@@ -140,14 +158,14 @@ def main(
         plan += populate_string(PUBLIC_SERVICE, dict(serviceName=serviceName))
     # print(plan)
     # random_dir = str(random.random())[3:]
-    with open("main.tf", "w") as f:
+    with open(output_plan, "w") as f:
         f.write(plan)
     try:
-        out = subprocess_call("terraform init")
+        out, _, _ = subprocess_call("terraform init")
         assert not out
-        out = subprocess_call("terraform refresh")
+        out, _, _ = subprocess_call("terraform refresh")
         assert not out
-        print("run terraform apply to execute the plan")
+        printblue("run terraform apply to execute the plan")
     except Exception as e:
         print(e)
 

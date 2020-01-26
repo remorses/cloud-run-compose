@@ -1,14 +1,14 @@
-FROM python:3.7-alpine
+FROM python:3.7.4-alpine
 
-RUN apk  add --no-cache dumb-init # build-base
+# RUN apk  add --no-cache dumb-init # build-base
 
-WORKDIR /src
+# WORKDIR /src
 
-COPY requirements.txt /src/
+# COPY requirements.txt /src/
 
-RUN pip install -r requirements.txt
+# RUN pip install -r requirements.txt
 
-COPY . /src/
+# COPY . /src/
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["python", "-m", ""]

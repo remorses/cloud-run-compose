@@ -7,6 +7,8 @@ services:
         # labels:
         #     - traefik.enable=true
         #     - 'traefik.frontend.rule=Host:graphql.instabotnet.club'
+        expose: 
+            - 8080
         ports:
             - 8080:80
         environment:
@@ -18,4 +20,8 @@ services:
             - sh
             - '-c'
             - 'echo ciao'
+    build:
+        build: .
+        image: loudrun-compose_build:ciao
+
     

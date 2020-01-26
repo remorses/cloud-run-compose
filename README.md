@@ -8,7 +8,6 @@
 
 ## Usage
 
-
 Download a service account json from the console, with the cloud run persmissions, place it in `./account.json`
 
 Use the following `docker-compose.yml` file

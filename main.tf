@@ -51,7 +51,7 @@ resource "google_cloud_run_service" "example-cloudrun-compose" {
 }
 
 
-output "example-cloudrun-composeservice_url" {
+output "example-cloudrun-compose_service_url" {
   value = "${google_cloud_run_service.example-cloudrun-compose.status[0].url}"
 }
 

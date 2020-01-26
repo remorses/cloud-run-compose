@@ -1,2 +1,6 @@
 coloredlogs
 python-dotenv
+colorama
+populate
+fire
+PyYAML

@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+import fire
+from cloud_run_compose.main import main
+fire.Fire(main)

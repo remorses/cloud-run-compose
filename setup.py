@@ -1,6 +1,6 @@
 from setuptools import setup
 
-NAME = 'module'
+NAME = 'cloud-run-compose'
 setup(
     name=NAME,
     # [bump]
@@ -23,7 +23,8 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    packages=[NAME],
+    scripts=['bin/cloud-run-compose'],
+    packages=[NAME.replace('-', '_')],
 )
 
 

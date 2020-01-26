@@ -1,4 +1,10 @@
-# python-lib-template
+# cloud-run-compose
+
+## Install
+
+```
+pip3 install cloud-run-compose
+```
 
 ## Requirements
 

@@ -170,5 +170,5 @@ def main(
         print(e)
 
 
-fire.Fire(main)
+
 

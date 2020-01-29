@@ -2,6 +2,8 @@
 
 Deploy a stack of services to Cloud Rus using the docker-compose syntax.
 
+Creates a terraform plan based on the docker-compose configuration.
+
 Missing docker-compose features
 - service discovery
 - volumes

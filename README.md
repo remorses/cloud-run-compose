@@ -1,5 +1,13 @@
 # cloud-run-compose
 
+Deploy a stack of services to Cloud Rus using the docker-compose syntax.
+
+Missing docker-compose features
+- service discovery
+- volumes
+- non https traffic
+
+
 ## Install
 
 ```

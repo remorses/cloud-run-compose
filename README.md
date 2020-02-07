@@ -5,10 +5,10 @@ Deploy a stack of services to Cloud Rus using the docker-compose syntax.
 Creates a terraform plan based on the docker-compose configuration.
 
 Missing docker-compose features
-- service discovery
-- volumes
-- non https traffic
 
+-   service discovery
+-   volumes
+-   non https traffic
 
 ## Install
 
@@ -65,3 +65,8 @@ If you want to also build and push the services you can use the `--build` flag, 
 -   push the image
 
 `compose --build --project {your-project} --credentials ./account.json`
+
+# TODO
+
+-   add private option in `labels`
+-   add

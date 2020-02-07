@@ -10,12 +10,24 @@ from .support import (
     dump_env_file,
     get_stdout,
     printred,
-    printblue
+    printblue,
 )
 import yaml
 
 
 here = os.path.dirname(__file__)
+
+REMOTE_STATE = r"""
+terraform {
+  backend "gcs" {
+    bucket      = "${{ bucket }}"
+    prefix      = "terraform_states/${{stack_name}}"
+    credentials = file("${{ credentials }}")
+  }
+}
+
+"""
+
 
 CREDENTIALS = r"""
 
@@ -43,9 +55,9 @@ data "google_iam_policy" "noauth" {
 
 
 SERVICE_PLAN = r"""
-resource "google_cloud_run_service" "${{ serviceName }}" {
+resource "google_cloud_run_service" "${{ service_name }}" {
   provider = google-beta
-  name     = "${{ serviceName }}"
+  name     = "${{ service_name }}"
   location = "${{ region }}"
   metadata {
     namespace = "${{ projectId }}"
@@ -67,16 +79,16 @@ resource "google_cloud_run_service" "${{ serviceName }}" {
 }
 
 
-output "${{serviceName}}_service_url" {
-  value = "${google_cloud_run_service.${{serviceName}}.status[0].url}"
+output "${{service_name}}_service_url" {
+  value = "${google_cloud_run_service.${{service_name}}.status[0].url}"
 }
 """
 
 PUBLIC_SERVICE = r"""
-resource "google_cloud_run_service_iam_policy" "${{serviceName}}_noauth" {
-  location    = google_cloud_run_service.${{serviceName}}.location
-  project     = google_cloud_run_service.${{serviceName}}.project
-  service     = google_cloud_run_service.${{serviceName}}.name
+resource "google_cloud_run_service_iam_policy" "${{service_name}}_noauth" {
+  location    = google_cloud_run_service.${{service_name}}.location
+  project     = google_cloud_run_service.${{service_name}}.project
+  service     = google_cloud_run_service.${{service_name}}.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }
@@ -118,7 +130,9 @@ def main(
     region="us-central1",
     credentials="credentials.json",
     output_plan="main.tf",
-    build=False
+    build=False,
+    bucket=None,
+    stack_name="",
 ):
     try:
         data = get_stdout(f"docker-compose -f {file} config")
@@ -126,27 +140,38 @@ def main(
         printred(e.message)
         return
     config = yaml.safe_load(data)
-    plan = populate_string(
+    if not stack_name:
+        stack_name = os.path.dirname(file).split("/")[-1]
+    if bucket:  # TODO use other bucket provider than gcp
+        plan = populate_string(
+            REMOTE_STATE,
+            dict(credentials=credentials, bucket=bucket, stack_name=stack_name),
+        )
+    plan += populate_string(
         CREDENTIALS, dict(region=region, projectId=project, credentials=credentials)
     )
-    for serviceName, service in config.get("services", {}).items():
-        if not service.get('image'):
-            printred('all services need an image to be deployed to Cloud Run')
+    for service_name, service in config.get("services", {}).items():
+        if not service.get("image"):
+            printred("all services need an image to be deployed to Cloud Run")
             return
-        if build and service.get('build'):
-            code, _, _ = subprocess_call(f'docker-compose -f {file} build {serviceName}')
+        if build and service.get("build"):
+            code, _, _ = subprocess_call(
+                f"docker-compose -f {file} build {service_name}"
+            )
             if code:
-                printred('failed building')
+                printred("failed building")
                 return
-            print('pushing to registry')
-            code, _, _ = subprocess_call(f'docker-compose -f {file} push {serviceName}')
+            print("pushing to registry")
+            code, _, _ = subprocess_call(
+                f"docker-compose -f {file} push {service_name}"
+            )
             if code:
-                printred('cannot push image')
+                printred("cannot push image")
                 return
 
         vars = dict(
             environment=get_environment(service),
-            serviceName=serviceName,
+            service_name=stack_name + service_name,
             image=service.get("image", ""),
             command=parse_command(service.get("entrypoint", [])),
             args=parse_command(service.get("command", [])),
@@ -155,7 +180,9 @@ def main(
         )
         populated_service = populate_string(SERVICE_PLAN, vars)
         plan += "\n" + populated_service
-        plan += populate_string(PUBLIC_SERVICE, dict(serviceName=serviceName))
+        plan += populate_string(
+            PUBLIC_SERVICE, dict(serviceName=stack_name + service_name)
+        )
     # print(plan)
     # random_dir = str(random.random())[3:]
     with open(output_plan, "w") as f:
@@ -168,7 +195,4 @@ def main(
         printblue("run `terraform apply` to execute the plan")
     except Exception as e:
         print(e)
-
-
-
 

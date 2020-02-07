@@ -15,6 +15,7 @@ from .support import (
     printred,
     printblue,
     SERVICE_URL_POSTFIX,
+    valid_name,
 )
 import yaml
 
@@ -155,6 +156,10 @@ def generate_terraform(file, project, region, credentials, build, bucket, stack_
         stack_name = os.path.basename(
             os.path.normpath(os.path.abspath(os.path.dirname(file)))
         )
+    if not valid_name(stack_name):
+        raise Exception(
+            "Service name may only start with a letter and contain up to 63 lowercase letters, numbers or hyphens"
+        )
     if bucket:  # TODO use other bucket provider than gcp
         plan = populate_string(
             REMOTE_STATE,
@@ -163,7 +168,12 @@ def generate_terraform(file, project, region, credentials, build, bucket, stack_
     plan += populate_string(
         CREDENTIALS, dict(region=region, projectId=project, credentials=credentials)
     )
+    url_mappings = {}
     for service_name, service in config.get("services", {}).items():
+        if not valid_name(service_name):
+            raise Exception(
+                "Service name may only start with a letter and contain up to 63 lowercase letters, numbers or hyphens"
+            )
         if not service.get("image"):
             printred("all services need an image to be deployed to Cloud Run")
             return
@@ -181,21 +191,23 @@ def generate_terraform(file, project, region, credentials, build, bucket, stack_
             if code:
                 printred("cannot push image")
                 return
-
+        namespaced_service_name = stack_name + "-" + service_name
+        output_url = namespaced_service_name + SERVICE_URL_POSTFIX
+        url_mappings[output_url] = service_name
         variables = dict(
             environment=get_environment(service),
-            service_name=stack_name + service_name,
+            service_name=namespaced_service_name,
             image=service.get("image", ""),
             command=parse_command(service.get("entrypoint", [])),
             args=parse_command(service.get("command", [])),
             region=region,
             projectId=project,
-            output_url=stack_name + service_name + SERVICE_URL_POSTFIX,
+            output_url=output_url,
         )
         populated_service = populate_string(SERVICE_PLAN, variables)
         plan += "\n" + populated_service
         plan += populate_string(
-            PUBLIC_SERVICE, dict(service_name=stack_name + service_name)
+            PUBLIC_SERVICE, dict(service_name=namespaced_service_name)
         )
-    return plan
+    return plan, url_mappings
 

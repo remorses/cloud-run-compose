@@ -19,6 +19,10 @@ with open(TF_CLI_CONFIG_FILE, "w") as f:
     f.write(f'plugin_cache_dir = "{PLUGINS_DIR}"')
 
 
+def valid_name(s):
+    return any(not c.isalnum() or c != "-" for c in s)
+
+
 def get_child(parent):
     for o in os.listdir(parent):
         if os.path.isdir(os.path.join(parent, o)):

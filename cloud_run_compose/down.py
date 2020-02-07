@@ -15,7 +15,7 @@ def down(
     stack_name="",
 ):
     try:
-        plan = generate_terraform(
+        plan, urls_map = generate_terraform(
             file=file,
             project=project,
             region=region,

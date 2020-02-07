@@ -15,7 +15,7 @@ def up(
     stack_name="",
 ):
     try:
-        plan = generate_terraform(
+        plan, urls_map = generate_terraform(
             file=file,
             project=project,
             region=region,
@@ -32,14 +32,13 @@ def up(
             out, json_out, _ = subprocess_call("terraform output -json")
             assert not out
             outputs = json.loads(json_out)
-            urls = [
-                v["value"]
+            urls = {
+                urls_map[k]: v["value"]
                 for k, v in outputs.items()
-                if k.endswith(SERVICE_URL_POSTFIX)
-            ]
+                if k in urls_map.keys()
+            }
             # printblue("run `terraform apply` to execute the plan")
-            print(urls)
-            # return urls
+            return urls
     except Exception as e:
         print("error", e)
 

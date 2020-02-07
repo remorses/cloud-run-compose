@@ -1,4 +1,5 @@
-from .main import main
 import fire
+from .up import up
+from .down import down
 
-fire.Fire(main)
+fire.Fire(dict(up=up, down=down))

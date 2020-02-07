@@ -69,4 +69,6 @@ If you want to also build and push the services you can use the `--build` flag, 
 # TODO
 
 -   add private option in `labels`
--   add
+-   only support remote bucket usage
+-   add constraints of concurrency, memory, cpu, maxScale via labels
+-

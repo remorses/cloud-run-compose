@@ -1,12 +1,39 @@
 import shutil
 import sys
 import os
+import pexpect
 import subprocess
 import random
 from dotenv import dotenv_values
 from colorama import Fore, Back, Style, init
+from contextlib import contextmanager
 
 init()
+SERVICE_URL_POSTFIX = "_service_url"
+here = os.path.abspath(os.path.dirname(__file__))
+
+
+@contextmanager
+def terraform_space(plan):
+    old_cwd = os.path.abspath(".")
+    hash = str(random.random()).replace(".", "")[:7]
+    cwd = os.path.join(here, "terraform", hash)
+    try:
+        os.makedirs(cwd, exist_ok=True)
+        os.chdir(cwd)
+        with open("main.tf", "w") as f:
+            f.write(plan)
+        plugin_dir = os.path.abspath(os.path.join(here, "plugins"))
+        out, _, _ = subprocess_call(
+            f"terraform init -plugin-dir {plugin_dir}", silent=True
+        )
+        assert not out
+        yield None
+    except Exception as e:
+        raise e
+    finally:
+        os.chdir(old_cwd)
+        shutil.rmtree(cwd)
 
 
 def printred(msg):
@@ -40,29 +67,30 @@ def subprocess_call(cmd, silent=False):
 
     popen_params = {
         "stdout": subprocess.PIPE,
-        "stderr": subprocess.PIPE,
-        "stdin": subprocess.DEVNULL,
+        "stderr": subprocess.STDOUT,
         "shell": True,
     }
     # pretty_cmd = ' '.join(cmd)
     # print(f'executing {pretty_cmd}')
     process = subprocess.Popen(cmd, **popen_params)
-
     result1 = ""
     result2 = ""
     while True:
         output = process.stdout.readline()
-        err = process.stderr.readline()
-        if process.poll() is not None and output == b"" and err == b"":
+        # err = process.stderr.readline()
+        err = ""
+        if output == b"":
             break
 
         if output:
             if not silent:
                 sys.stdout.write(output.decode())
+                sys.stdout.flush()
             result1 += output.decode()
         if err:
             if not silent:
                 sys.stderr.write(err.decode())
+                sys.stderr.flush()
             result2 += err.decode()
     return process.returncode, result1, result2
 

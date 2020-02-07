@@ -14,11 +14,10 @@ from .support import (
     get_stdout,
     printred,
     printblue,
+    SERVICE_URL_POSTFIX,
 )
 import yaml
 
-
-here = os.path.abspath(os.path.dirname(__file__))
 
 REMOTE_STATE = r"""
 terraform {
@@ -111,6 +110,7 @@ resource "google_cloud_run_service_iam_policy" "${{service_name}}_noauth" {
 }
 """
 
+
 # plan = load(os.path.join(here, "main.tf"))
 
 
@@ -141,15 +141,7 @@ def parse_command(command):
     raise Exception(f"cannot transform command `{command}` to list")
 
 
-def main(
-    file="docker-compose.yml",
-    project="",
-    region="us-central1",
-    credentials="credentials.json",
-    build=False,
-    bucket=None,
-    stack_name="",
-):
+def generate_terraform(file, project, region, credentials, build, bucket, stack_name):
     assert project
     credentials = os.path.abspath(credentials)
     file = os.path.abspath(file)
@@ -190,8 +182,7 @@ def main(
                 printred("cannot push image")
                 return
 
-        output_url = stack_name + service_name + "_service_url"
-        vars = dict(
+        variables = dict(
             environment=get_environment(service),
             service_name=stack_name + service_name,
             image=service.get("image", ""),
@@ -199,38 +190,12 @@ def main(
             args=parse_command(service.get("command", [])),
             region=region,
             projectId=project,
-            output_url=output_url,
+            output_url=stack_name + service_name + SERVICE_URL_POSTFIX,
         )
-        populated_service = populate_string(SERVICE_PLAN, vars)
+        populated_service = populate_string(SERVICE_PLAN, variables)
         plan += "\n" + populated_service
         plan += populate_string(
             PUBLIC_SERVICE, dict(service_name=stack_name + service_name)
         )
-    # print(plan)
-    # random_dir = str(random.random())[3:]
-    try:
-        cwd = os.path.join(here, "terraform", str(random.random()).replace(".", ""))
-        os.makedirs(cwd, exist_ok=True)
-        os.chdir(cwd)
-        with open("main.tf", "w") as f:
-            f.write(plan)
-        plugin_dir = os.path.abspath(os.path.join(here, "plugins"))
-        out, _, _ = subprocess_call(
-            f"terraform init -plugin-dir {plugin_dir}", silent=True
-        )
-        assert not out
-        out, _, _ = subprocess_call("terraform plan")
-        assert not out
-        out, _, _ = subprocess_call("terraform apply -auto-approve")
-        assert not out
-        out, json_out, _ = subprocess_call("terraform output -json")
-        assert not out
-        outputs = json.loads(json_out)
-        urls = [v["value"] for k, v in outputs.items() if k.endswith("_service_url")]
-        # shutil.rmtree(cwd)
-        # printblue("run `terraform apply` to execute the plan")
-        print(urls)
-        return urls
-    except Exception as e:
-        print(e)
+    return plan
 

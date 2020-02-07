@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.terraformrc
+plugins
 # C extensions
 *.so
 account.json

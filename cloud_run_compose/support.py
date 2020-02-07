@@ -12,6 +12,18 @@ init()
 SERVICE_URL_POSTFIX = "_service_url"
 here = os.path.abspath(os.path.dirname(__file__))
 
+TF_CLI_CONFIG_FILE = os.path.join(here, ".terraformrc")
+PLUGINS_DIR = os.path.join(here, "plugins")
+os.makedirs(PLUGINS_DIR, exist_ok=True)
+with open(TF_CLI_CONFIG_FILE, "w") as f:
+    f.write(f'plugin_cache_dir = "{PLUGINS_DIR}"')
+
+
+def get_child(parent):
+    for o in os.listdir(parent):
+        if os.path.isdir(os.path.join(parent, o)):
+            return os.path.abspath(os.path.join(parent, o))
+
 
 @contextmanager
 def terraform_space(plan):
@@ -23,11 +35,15 @@ def terraform_space(plan):
         os.chdir(cwd)
         with open("main.tf", "w") as f:
             f.write(plan)
-        plugin_dir = os.path.abspath(os.path.join(here, "plugins"))
-        out, _, _ = subprocess_call(
-            f"terraform init -plugin-dir {plugin_dir}", silent=True
-        )
-        assert not out
+        # plugin_dir = os.path.abspath(os.path.join(here, "plugins"))
+
+        plugins_dir = get_child(PLUGINS_DIR)
+        if not plugins_dir:
+            out, _, _ = subprocess_call(f"terraform init")
+            assert not out
+        else:
+            out, _, _ = subprocess_call(f"terraform init -plugin-dir {plugins_dir}")
+            assert not out
         yield None
     except Exception as e:
         raise e
@@ -69,6 +85,11 @@ def subprocess_call(cmd, silent=False):
         "stdout": subprocess.PIPE,
         "stderr": subprocess.STDOUT,
         "shell": True,
+        "env": {
+            **os.environ,
+            "TF_IN_AUTOMATION": "1",
+            "TF_CLI_CONFIG_FILE": TF_CLI_CONFIG_FILE,
+        },
     }
     # pretty_cmd = ' '.join(cmd)
     # print(f'executing {pretty_cmd}')

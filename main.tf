@@ -1,13 +1,22 @@
 
+terraform {
+  backend "gcs" {
+    bucket      = "example_shit_1"
+    prefix      = "terraform_states/cloudrun-compose"
+    credentials = "/Users/morse/Documents/GitHub/cloudrun-compose/account.json"
+  }
+}
+
+
 
 provider "google-beta" {
-  credentials = file("account.json")
+  credentials = file("/Users/morse/Documents/GitHub/cloudrun-compose/account.json")
   project     = "molten-enigma-261612"
   region      = "us-central1"
 }
 
 provider "google" {
-  credentials = file("account.json")
+  credentials = file("/Users/morse/Documents/GitHub/cloudrun-compose/account.json")
   project     = "molten-enigma-261612"
   region      = "us-central1"
 }
@@ -22,9 +31,9 @@ data "google_iam_policy" "noauth" {
 }
 
 
-resource "google_cloud_run_service" "example-cloudrun-compose" {
+resource "google_cloud_run_service" "cloudrun-composeexample-cloudrun-compose" {
   provider = google-beta
-  name     = "example-cloudrun-compose"
+  name     = "cloudrun-composeexample-cloudrun-compose"
   location = "us-central1"
   metadata {
     namespace = "molten-enigma-261612"
@@ -51,14 +60,14 @@ resource "google_cloud_run_service" "example-cloudrun-compose" {
 }
 
 
-output "example-cloudrun-compose_service_url" {
-  value = "${google_cloud_run_service.example-cloudrun-compose.status[0].url}"
+output "cloudrun-composeexample-cloudrun-compose_service_url" {
+  value = "${google_cloud_run_service.cloudrun-composeexample-cloudrun-compose.status[0].url}"
 }
 
-resource "google_cloud_run_service_iam_policy" "example-cloudrun-compose_noauth" {
-  location    = google_cloud_run_service.example-cloudrun-compose.location
-  project     = google_cloud_run_service.example-cloudrun-compose.project
-  service     = google_cloud_run_service.example-cloudrun-compose.name
+resource "google_cloud_run_service_iam_policy" "cloudrun-composeexample-cloudrun-compose_noauth" {
+  location    = google_cloud_run_service.cloudrun-composeexample-cloudrun-compose.location
+  project     = google_cloud_run_service.cloudrun-composeexample-cloudrun-compose.project
+  service     = google_cloud_run_service.cloudrun-composeexample-cloudrun-compose.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }

@@ -1,4 +1,7 @@
 import fire
+import shutil
+import json
+from funcy import drop, pluck
 import random
 from populate import populate_string
 import os.path
@@ -15,14 +18,14 @@ from .support import (
 import yaml
 
 
-here = os.path.dirname(__file__)
+here = os.path.abspath(os.path.dirname(__file__))
 
 REMOTE_STATE = r"""
 terraform {
   backend "gcs" {
     bucket      = "${{ bucket }}"
     prefix      = "terraform_states/${{stack_name}}"
-    credentials = file("${{ credentials }}")
+    credentials = "${{ credentials }}"
   }
 }
 
@@ -64,9 +67,23 @@ resource "google_cloud_run_service" "${{ service_name }}" {
   }
 
   template {
+    metadata {
+        annotations = {
+            "autoscaling.knative.dev/maxScale" = "1000"
+        }
+        labels      = {}
+    }
     spec {
+      container_concurrency = 80 
       containers {
         image = "${{ image }}"
+        resources {
+            limits   = {
+                cpu    = "1000m"
+                memory = "256M"
+            }
+            requests = {}
+        }
         ${{ f'command = {json.dumps(command)}' if command else '' }}
         ${{ f'args = {json.dumps(args)}' if args else '' }}
 
@@ -79,7 +96,7 @@ resource "google_cloud_run_service" "${{ service_name }}" {
 }
 
 
-output "${{service_name}}_service_url" {
+output "${{output_url}}" {
   value = "${google_cloud_run_service.${{service_name}}.status[0].url}"
 }
 """
@@ -126,14 +143,16 @@ def parse_command(command):
 
 def main(
     file="docker-compose.yml",
-    project="pp1",
+    project="",
     region="us-central1",
     credentials="credentials.json",
-    output_plan="main.tf",
     build=False,
     bucket=None,
     stack_name="",
 ):
+    assert project
+    credentials = os.path.abspath(credentials)
+    file = os.path.abspath(file)
     try:
         data = get_stdout(f"docker-compose -f {file} config")
     except ProcessException as e:
@@ -141,7 +160,9 @@ def main(
         return
     config = yaml.safe_load(data)
     if not stack_name:
-        stack_name = os.path.dirname(file).split("/")[-1]
+        stack_name = os.path.basename(
+            os.path.normpath(os.path.abspath(os.path.dirname(file)))
+        )
     if bucket:  # TODO use other bucket provider than gcp
         plan = populate_string(
             REMOTE_STATE,
@@ -169,6 +190,7 @@ def main(
                 printred("cannot push image")
                 return
 
+        output_url = stack_name + service_name + "_service_url"
         vars = dict(
             environment=get_environment(service),
             service_name=stack_name + service_name,
@@ -177,22 +199,38 @@ def main(
             args=parse_command(service.get("command", [])),
             region=region,
             projectId=project,
+            output_url=output_url,
         )
         populated_service = populate_string(SERVICE_PLAN, vars)
         plan += "\n" + populated_service
         plan += populate_string(
-            PUBLIC_SERVICE, dict(serviceName=stack_name + service_name)
+            PUBLIC_SERVICE, dict(service_name=stack_name + service_name)
         )
     # print(plan)
     # random_dir = str(random.random())[3:]
-    with open(output_plan, "w") as f:
-        f.write(plan)
     try:
-        out, _, _ = subprocess_call("terraform init")
+        cwd = os.path.join(here, "terraform", str(random.random()).replace(".", ""))
+        os.makedirs(cwd, exist_ok=True)
+        os.chdir(cwd)
+        with open("main.tf", "w") as f:
+            f.write(plan)
+        plugin_dir = os.path.abspath(os.path.join(here, "plugins"))
+        out, _, _ = subprocess_call(
+            f"terraform init -plugin-dir {plugin_dir}", silent=True
+        )
         assert not out
-        out, _, _ = subprocess_call("terraform refresh")
+        out, _, _ = subprocess_call("terraform plan")
         assert not out
-        printblue("run `terraform apply` to execute the plan")
+        out, _, _ = subprocess_call("terraform apply -auto-approve")
+        assert not out
+        out, json_out, _ = subprocess_call("terraform output -json")
+        assert not out
+        outputs = json.loads(json_out)
+        urls = [v["value"] for k, v in outputs.items() if k.endswith("_service_url")]
+        # shutil.rmtree(cwd)
+        # printblue("run `terraform apply` to execute the plan")
+        print(urls)
+        return urls
     except Exception as e:
         print(e)
 

@@ -1,4 +1,5 @@
 import shutil
+import sys
 import os
 import subprocess
 import random
@@ -7,13 +8,16 @@ from colorama import Fore, Back, Style, init
 
 init()
 
+
 def printred(msg):
     print(Fore.RED + msg)
     print(Style.RESET_ALL)
 
+
 def printblue(msg):
     print(Fore.YELLOW + msg)
     print(Style.RESET_ALL)
+
 
 def dump_env_file(path):
     return dotenv_values(path)
@@ -31,7 +35,7 @@ class ProcessException(Exception):
         self.message = err + out
 
 
-def subprocess_call(cmd, ):
+def subprocess_call(cmd, silent=False):
     """ Executes the given subprocess command."""
 
     popen_params = {
@@ -44,22 +48,26 @@ def subprocess_call(cmd, ):
     # print(f'executing {pretty_cmd}')
     process = subprocess.Popen(cmd, **popen_params)
 
-    result1 = ''
-    result2 = ''
+    result1 = ""
+    result2 = ""
     while True:
         output = process.stdout.readline()
         err = process.stderr.readline()
         if process.poll() is not None and output == b"" and err == b"":
             break
+
         if output:
-            print(output.decode(), end="")
+            if not silent:
+                sys.stdout.write(output.decode())
             result1 += output.decode()
         if err:
-            print(err.decode(), end="")
+            if not silent:
+                sys.stderr.write(err.decode())
             result2 += err.decode()
-    return process.poll(), result1, result2
+    return process.returncode, result1, result2
 
-def get_stdout(cmd, ):
+
+def get_stdout(cmd,):
     """ Executes the given subprocess command."""
 
     popen_params = {
